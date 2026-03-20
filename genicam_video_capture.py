@@ -541,16 +541,22 @@ if __name__ == '__main__':
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1501)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1501)
     # cap.set(cv2.CAP_PROP_GAIN, 5)
+    cap.set(cv2.CAP_PROP_AUTO_WB, True)
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, True)
     cap.set(cv2.CAP_PROP_AUTOFOCUS, True)
 
-    cap.start_async()
+    # cap.start_async()
     try:
         cv2.namedWindow("display")
-        for i in range(1000):
-            frame = cap.async_read(timeout_ms=200, return_dict=False)
-            # ret, frame = cap.read()
-            cv2.setWindowTitle("display", f"frame {i:03d}")
-            cv2.imshow("display", frame)
+        id = 0
+        while True:
+            # frame = cap.async_read(timeout_ms=200, return_dict=False)
+            ret, frame = cap.read()
+            if ret:
+                frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+                cv2.setWindowTitle("display", f"frame {id:03d}")
+                id += 1
+                cv2.imshow("display", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     finally:
