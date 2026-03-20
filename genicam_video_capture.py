@@ -65,6 +65,7 @@ class GenICamVideoCapture:
         self._enable_device_timestamp = bool(enable_device_timestamp)
 
         self.pipeline = ids_peak_icv.pipeline.DefaultPipeline()
+        self.pipeline.output_pixel_format = ids_peak_common.PixelFormat.BGR_8
 
         self.open(index_or_serial)
 
@@ -332,8 +333,7 @@ class GenICamVideoCapture:
         ok, buffer, frame = False, None, None
         try:
             buffer = self.datastream.WaitForFinishedBuffer(self._buf_timeout)
-            frame = self.pipeline.process(buffer.ToImageView()).to_numpy_array()
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            frame = self.pipeline.process(buffer.ToImageView()).to_numpy_array(True)
             if as_gray:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             ok = True
@@ -360,7 +360,7 @@ class GenICamVideoCapture:
         self._thread = None
         self._new_frame_event.clear()
 
-    def async_read(self, timeout_ms=200, return_dict=False, as_rgb=False):
+    def async_read(self, timeout_ms=200, return_dict=False):
         """
         Liefert das jüngste Frame aus dem Hintergrund-Thread.
         - timeout_ms: Wartezeit auf neues Frame
@@ -382,9 +382,6 @@ class GenICamVideoCapture:
 
         if frame is None:
             raise RuntimeError("Internal: event set but no frame available.")
-
-        if as_rgb:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         if return_dict:
             return {
@@ -530,16 +527,16 @@ class GenICamVideoCapture:
 
 if __name__ == '__main__':
     cap = GenICamVideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1501)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1501)
-    cap.set(cv2.CAP_PROP_GAIN, 5)
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1501)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1501)
+    # cap.set(cv2.CAP_PROP_GAIN, 5)
     cap.set(cv2.CAP_PROP_AUTOFOCUS, True)
 
     cap.start_async()
     try:
         cv2.namedWindow("display")
         for i in range(1000):
-            frame = cap.async_read(timeout_ms=200, return_dict=False, as_rgb=True)
+            frame = cap.async_read(timeout_ms=200, return_dict=False)
             # ret, frame = cap.read()
             cv2.setWindowTitle("display", f"frame {i:03d}")
             cv2.imshow("display", frame)
