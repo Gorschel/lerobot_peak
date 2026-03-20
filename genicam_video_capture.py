@@ -64,10 +64,12 @@ class GenICamVideoCapture:
         self._buffers_min = int(buffers_min)
         self._enable_device_timestamp = bool(enable_device_timestamp)
 
+        self.open(index_or_serial)
+
         self.pipeline = ids_peak_icv.pipeline.DefaultPipeline()
         self.pipeline.output_pixel_format = ids_peak_common.PixelFormat.BGR_8
-
-        self.open(index_or_serial)
+        self.pipeline.color_correction.matrix = self.get_ccm()
+        self.pipeline.gamma.value = 2.2
 
     def __del__(self):
         try:
@@ -75,6 +77,15 @@ class GenICamVideoCapture:
         except Exception as e:
             print(e)
             pass
+
+    def get_ccm(self):
+        ccm = np.identity(3, dtype=np.float32)
+        if self.has_node('ColorCorrectionMatrix') and self.has_node('ColorCorrectionMatrixValueSelector'):
+            for x in range(3):
+                for y in range(3):
+                    self.set_node('ColorCorrectionMatrixValueSelector', f"Gain{x}{y}")
+                    ccm[x, y] = self.get_node('ColorCorrectionMatrixValue')
+        return ccm
 
     # ---------------------- Node convenience ----------------------
     def has_node(self, name):
